@@ -1,0 +1,193 @@
+---
+title: "2022-04 Francesca's eIF2 signaling experiment"
+output: html_notebook
+---
+
+## Experimental design
+
+This is the best expeirment ever devised and executed!
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(magrittr)
+library(readxl)
+library(writexl)
+library(lmerTest)
+
+theme_set(theme_bw())
+```
+
+```{r}
+RegWB <- read_xlsx("RegWB.xlsx")
+
+RegWB %<>% drop_na
+
+RegWB
+```
+```{r}
+RegWB %>% 
+  ggplot(aes(x= Genotype, y = p_total_eif2a, color = Treatment)) +
+  geom_boxplot() +
+  facet_wrap(~ Experiment)
+```
+
+```{r}
+RegWB %>% 
+  ggplot(aes(x= Genotype, y = ATF4, color = Treatment)) +
+  geom_boxplot() +
+  facet_wrap(~ Experiment)
+```
+
+## One-way ANOVA (baseline only)
+
+```{r}
+baseline = RegWB %>%
+  group_by(Line, Genotype, Treatment) %>%
+  summarize(meanATF4 = mean(ATF4),
+            sdATF4 = sd(ATF4),
+            meanEIF2a= mean(p_total_eif2a),
+            sdEIF2a = sd(p_total_eif2a),) %>%
+  filter(Treatment == "none")
+
+baseline
+```
+
+```{r}
+baseline.ATF4.fit = lm(data = baseline, formula = meanATF4 ~ Genotype)
+
+summary(baseline.ATF4.fit)
+```
+
+```{r}
+baseline.ATF4.aov = aov(data = baseline, formula = meanATF4 ~ Genotype)
+
+summary(baseline.ATF4.aov)
+
+TukeyHSD(baseline.ATF4.aov)
+```
+
+```{r}
+baseline.EIF2a.fit = lm(data = baseline, formula = meanEIF2a ~ Genotype)
+
+summary(baseline.EIF2a.fit)
+```
+
+```{r}
+baseline.EIF2a.aov = aov(data = baseline, formula = meanEIF2a ~ Genotype)
+
+summary(baseline.EIF2a.aov)
+
+TukeyHSD(baseline.EIF2a.aov)
+```
+
+
+## One-way ANOVA (thpsg only)
+
+```{r}
+thpsg = RegWB %>%
+  group_by(Line, Genotype, Treatment) %>%
+  summarize(meanATF4 = mean(ATF4),
+            sdATF4 = sd(ATF4),
+            meanEIF2a= mean(p_total_eif2a),
+            sdEIF2a = sd(p_total_eif2a),) %>%
+  filter(Treatment == "thpsg")
+
+thpsg
+```
+
+```{r}
+thpsg.ATF4.fit = lm(data = thpsg, formula = meanATF4 ~ Genotype)
+
+summary(thpsg.ATF4.fit)
+```
+
+```{r}
+thpsg.ATF4.aov = aov(data = thpsg, formula = meanATF4 ~ Genotype)
+
+summary(thpsg.ATF4.aov)
+
+TukeyHSD(thpsg.ATF4.aov)
+```
+
+```{r}
+thpsg.EIF2a.fit = lm(data = thpsg, formula = meanEIF2a ~ Genotype)
+
+summary(thpsg.EIF2a.fit)
+```
+
+```{r}
+thpsg.EIF2a.aov = aov(data = thpsg, formula = meanEIF2a ~ Genotype)
+
+summary(thpsg.EIF2a.aov)
+
+TukeyHSD(thpsg.EIF2a.aov)
+```
+
+
+## Repeated-measures One-Way ANOVA (baseline only)
+
+```{r}
+baseline = RegWB %>%
+  group_by(Line, Experiment, Genotype, Treatment) %>%
+  summarize(meanATF4 = mean(ATF4),
+            sdATF4 = sd(ATF4),
+            meanEIF2a= mean(p_total_eif2a),
+            sdEIF2a = sd(p_total_eif2a),) %>%
+  filter(Treatment == "none") %>%
+  select(-Treatment)
+
+baseline
+```
+
+```{r}
+baseline.ATF4.lm <- lmer(data = baseline, formula = meanATF4 ~ Genotype + (1 | Line))
+
+summary(baseline.ATF4.lm)
+```
+
+```{r}
+baseline.EIF2a.lm <- lmer(data = baseline, formula = meanEIF2a ~ Genotype + (1 | Line))
+
+summary(baseline.EIF2a.lm)
+```
+
+## Repeated-measures One-Way ANOVA (thpsg only)
+
+```{r}
+thpsg = RegWB %>%
+  group_by(Line, Experiment, Genotype, Treatment) %>%
+  summarize(meanATF4 = mean(ATF4),
+            sdATF4 = sd(ATF4),
+            meanEIF2a= mean(p_total_eif2a),
+            sdEIF2a = sd(p_total_eif2a),) %>%
+  filter(Treatment == "thpsg") %>%
+  select(-Treatment)
+
+thpsg
+```
+
+```{r}
+thpsg.ATF4.lm <- lmer(data = thpsg, formula = meanATF4 ~ Genotype + (1 | Line))
+
+summary(thpsg.ATF4.lm)
+```
+
+```{r}
+thpsg.EIF2a.lm <- lmer(data = thpsg, formula = meanEIF2a ~ Genotype + (1 | Line))
+
+summary(thpsg.EIF2a.lm)
+```
+
+## Omnibus hierarchical model
+
+```{r}
+ATF4.lm <- lmer(data = RegWB, formula = ATF4 ~ 1 + Genotype * Treatment + (1 | Line/Experiment))
+
+summary(ATF4.lm)
+```
+
+```{r}
+EIF2a.lm <- lmer(data = RegWB, formula = p_total_eif2a ~ 1 + Genotype * Treatment + (1 | Line/Experiment))
+
+summary(EIF2a.lm)
+```
